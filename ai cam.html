@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>وصف المشهد بالذكاء الاصطناعي</title>
+    <script defer src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f4;
+        }
+        video, canvas {
+            width: 80%;
+            max-width: 600px;
+            margin-top: 20px;
+            border-radius: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            margin-top: 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>وصف المشهد بالذكاء الاصطناعي</h1>
+    <video id="video" autoplay></video>
+    <canvas id="canvas" style="display: none;"></canvas>
+    <button onclick="captureAndDescribe()">ابدأ الوصف</button>
+    <p id="result"></p>
+    
+    <script>
+        const video = document.getElementById("video");
+        const canvas = document.getElementById("canvas");
+        const resultText = document.getElementById("result");
+        let model;
+
+        async function setupCamera() {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            video.srcObject = stream;
+        }
+
+        async function loadModel() {
+            model = await cocoSsd.load();
+        }
+
+        async function captureAndDescribe() {
+            const ctx = canvas.getContext("2d");
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            const predictions = await model.detect(video);
+            let description = "المشهد يحتوي على: ";
+            if (predictions.length > 0) {
+                predictions.forEach(prediction => {
+                    description += `${prediction.class}، `;
+                });
+                description = description.slice(0, -2) + ".";
+            } else {
+                description = "لم يتم التعرف على أي شيء مميز.";
+            }
+            
+            resultText.innerText = description;
+            speak(description);
+        }
+
+        function speak(text) {
+            const speech = new SpeechSynthesisUtterance(text);
+            speech.lang = "ar";
+            window.speechSynthesis.speak(speech);
+        }
+
+        setupCamera();
+        loadModel();
+    </script>
+</body>
+</html>
