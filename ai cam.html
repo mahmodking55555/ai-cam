@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>وصف المشهد بالذكاء الاصطناعي</title>
-    <script defer src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -41,15 +39,10 @@
         const video = document.getElementById("video");
         const canvas = document.getElementById("canvas");
         const resultText = document.getElementById("result");
-        let model;
 
         async function setupCamera() {
             const stream = await navigator.mediaDevices.getUserMedia({ video: true });
             video.srcObject = stream;
-        }
-
-        async function loadModel() {
-            model = await cocoSsd.load();
         }
 
         async function captureAndDescribe() {
@@ -58,19 +51,24 @@
             canvas.height = video.videoHeight;
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
             
-            const predictions = await model.detect(video);
-            let description = "المشهد يحتوي على: ";
-            if (predictions.length > 0) {
-                predictions.forEach(prediction => {
-                    description += `${prediction.class}، `;
-                });
-                description = description.slice(0, -2) + ".";
-            } else {
-                description = "لم يتم التعرف على أي شيء مميز.";
-            }
-            
-            resultText.innerText = description;
-            speak(description);
+            canvas.toBlob(async (blob) => {
+                const formData = new FormData();
+                formData.append("image", blob, "image.jpg");
+                
+                resultText.innerText = "جاري تحليل الصورة...";
+                
+                try {
+                    const response = await fetch("https://your-ai-api-endpoint.com/analyze", {
+                        method: "POST",
+                        body: formData
+                    });
+                    const data = await response.json();
+                    resultText.innerText = data.description;
+                    speak(data.description);
+                } catch (error) {
+                    resultText.innerText = "حدث خطأ أثناء تحليل الصورة.";
+                }
+            }, "image/jpeg");
         }
 
         function speak(text) {
@@ -80,7 +78,6 @@
         }
 
         setupCamera();
-        loadModel();
     </script>
 </body>
 </html>
